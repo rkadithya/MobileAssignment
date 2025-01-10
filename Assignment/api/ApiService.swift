@@ -14,11 +14,19 @@ class ApiService : NSObject {
     
     func fetchDeviceDetails(completion : @escaping ([DeviceData]) -> ()){
         URLSession.shared.dataTask(with: sourcesURL) { (data, urlResponse, error) in
+            if let error = error {
+                print("Network error: \(error.localizedDescription)")
+                completion([]) // Return an empty array on network failure
+                return
+            }
+            
             if let data = data {
-                
                 let jsonDecoder = JSONDecoder()
                 let empData = try! jsonDecoder.decode([DeviceData].self, from: data)
-                    completion(empData)
+                if (empData.isEmpty) {
+                    completion([])
+                    // Error
+                }
             }
         }.resume()
     }
