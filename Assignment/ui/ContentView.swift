@@ -8,36 +8,37 @@
 import SwiftUI
 
 struct ContentView: View {
-    private var viewModel = ContentViewModel()
-    @State private var path: [DeviceData] = [] // Navigation path
-
+    @StateObject  var viewModel = ContentViewModel()
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if let computers = viewModel.data, !computers.isEmpty {
-                    DevicesList(devices: computers) { selectedComputer in
-                        viewModel.navigateToDetail(navigateDetail: selectedComputer)
+        NavigationStack {
+            VStack{
+            List(viewModel.data){ data in
+                
+                NavigationLink(destination: DetailView(device: data)){
+               let color = data.data?.color
+                    let capacity = data.data?.capacity
+
+                VStack(alignment: .leading, spacing: 5){
+                    Text(data.name)
+                        .font(.headline)
+                    if (color != nil){
+                        Text("Color: \(color ?? "")")
+                            .font(.subheadline)
+
                     }
-                } else {
-                    ProgressView("Loading...")
-                }
-            }
-            .onChange(of: viewModel.navigateDetail, {
-                let navigate = viewModel.navigateDetail
-                path.append(navigate!)
-            })
-            .navigationTitle("Devices")
-            .navigationDestination(for: DeviceData.self) { computer in
-                DetailView(device: computer)
-            }
-            .onAppear {
-                let navigate = viewModel.navigateDetail
-                if (navigate != nil) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        path.append(navigate!)
+                    
+                    if (capacity != nil){
+                        Text("Capacity: \(capacity ?? "")")
+                            .font(.subheadline)
+
+
+
                     }
                 }
-            }
-        }
+            }}
+        }}.onAppear(perform: viewModel.fetchAPI)
     }
+}
+#Preview {
+    ContentView()
 }

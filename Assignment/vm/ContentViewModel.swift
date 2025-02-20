@@ -6,19 +6,33 @@
 //
 
 import Foundation
+import Combine
 
 
 class ContentViewModel : ObservableObject {
     
-    private let apiService = ApiService()
     @Published var navigateDetail: DeviceData? = nil
-    @Published var data: [DeviceData]? = []
+    @Published var data : [DeviceData] = []
+    var cancellable = Set<AnyCancellable>()
 
-    func fetchAPI() {
-        apiService.fetchDeviceDetails(completion: { item in
-            self.data = item
-        })
+
+    func fetchAPI(){
+        ApiService.shared.fetchDeviceDetails()
+            .sink(receiveCompletion: { completion in
+                
+                switch completion{
+                case .failure(let error) :
+                    print(error.localizedDescription)
+                case .finished :
+                    print("success")
+                }
+                
+            }, receiveValue: {[weak self ] data in
+                self?.data = data
+            })
+            .store(in: &cancellable)
     }
+    
     
     func navigateToDetail(navigateDetail: DeviceData) {
         self.navigateDetail = navigateDetail

@@ -6,27 +6,24 @@
 //
 
 import Foundation
+import Combine
 
 class ApiService : NSObject {
-    private let baseUrl = ""
+    static let shared = ApiService()
     
-    private let sourcesURL = URL(string: "https://api.restful-api.dev/objects")!
-    
-    func fetchDeviceDetails(completion : @escaping ([DeviceData]) -> ()){
-        URLSession.shared.dataTask(with: sourcesURL) { (data, urlResponse, error) in
-            if let error = error {
-                print("Network error: \(error.localizedDescription)")
-                completion([]) // Return an empty array on network failure
-                return
-            }
-            
-            if let data = data {
-                let jsonDecoder = JSONDecoder()
-                let empData = try! jsonDecoder.decode([DeviceData].self, from: data)
-                if (empData.isEmpty) {
-                    completion([])
-                }
-            }
-        }.resume()
+    func fetchDeviceDetails() -> AnyPublisher<[DeviceData],Error> {
+        guard let url = URL(string: "https://api.restful-api.dev/objects")
+        else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+        var request = URLRequest(url: url)
+        request.cachePolicy = .returnCacheDataElseLoad
+        
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: [DeviceData].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+
     }
 }
